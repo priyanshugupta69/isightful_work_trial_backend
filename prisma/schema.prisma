@@ -1,0 +1,164 @@
+generator client {
+  provider        = "prisma-client-js"
+  output          = "../generated/prisma"
+  previewFeatures = ["postgresqlExtensions"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DB_URL")
+}
+
+enum TaskStatus {
+  TODO
+  IN_PROGRESS
+  COMPLETED
+}
+
+enum TaskPriority {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+model employee {
+  id                BigInt             @id @default(autoincrement())
+  uuid              String?            @default(uuid()) @db.Uuid
+  created_at        DateTime           @default(now()) @db.Timestamptz(6)
+  updated_at        DateTime           @default(now()) @db.Timestamptz(6)
+  deleted_at        DateTime?          @db.Timestamptz(6)
+  first_name        String             @db.VarChar(255)
+  last_name         String?            @db.VarChar(255)
+  verified          Boolean?           @default(false)
+  email             String             @db.VarChar(255)
+  password          String?            @db.VarChar(255)
+  hourly_rate       Float?
+  team_id           Int
+  organization_id   BigInt
+  organization      organization       @relation(fields: [organization_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "employee_organization_id_fkey")
+  team              team               @relation(fields: [team_id, organization_id], references: [id, organization_id], onDelete: NoAction, onUpdate: NoAction, map: "employee_team_id_organization_id_fkey")
+  project_employees project_employee[]
+  task_employees    task_employee[]
+  sessions          session[]
+
+  @@unique([email, organization_id], name: "idx_employee_email_organization_id_unique")
+  @@index([email], name: "idx_employee_email")
+}
+
+model organization {
+  id          BigInt     @id @default(autoincrement())
+  uuid        String     @default(uuid()) @db.Uuid
+  created_at  DateTime   @default(now()) @db.Timestamptz(6)
+  updated_at  DateTime?  @default(now()) @db.Timestamptz(6)
+  deleted_at  DateTime?  @db.Timestamptz(6)
+  name        String     @db.VarChar(255)
+  email       String     @unique(map: "idx_organization_email_unique") @db.VarChar(255)
+  password    String     @db.VarChar(255)
+  is_verified Boolean    @default(false)
+  projects    project[]
+  teams       team[]
+  employees   employee[]
+}
+
+model project {
+  id                BigInt             @id(map: "projects_pkey") @default(autoincrement())
+  uuid              String?            @default(uuid()) @db.Uuid
+  created_at        DateTime           @default(now()) @db.Timestamptz(6)
+  updated_at        DateTime           @default(now()) @db.Timestamptz(6)
+  deleted_at        DateTime?          @db.Timestamptz(6)
+  name              String             @db.VarChar(255)
+  org_id            BigInt
+  organization      organization       @relation(fields: [org_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "projects_org_id_fkey")
+  tasks             task[]
+  project_employees project_employee[]
+
+  @@index([org_id], name: "idx_project_org_id")
+}
+
+model task {
+  id             BigInt          @id @default(autoincrement())
+  uuid           String?         @default(uuid()) @db.Uuid
+  created_at     DateTime        @default(now()) @db.Timestamptz(6)
+  updated_at     DateTime        @default(now()) @db.Timestamptz(6)
+  deleted_at     DateTime?       @db.Timestamptz(6)
+  title          String          @db.VarChar(255)
+  description    String?         @db.VarChar(255)
+  status         TaskStatus      @default(TODO)
+  start_date     DateTime?       @db.Timestamptz(6)
+  end_date       DateTime?       @db.Timestamptz(6)
+  priority       TaskPriority    @default(LOW)
+  project_id     BigInt
+  project        project         @relation(fields: [project_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  task_employees task_employee[]
+  sessions       session[]
+
+  @@index([project_id], name: "idx_task_project_id")
+}
+
+model project_employee {
+  id          BigInt    @id @default(autoincrement())
+  created_at  DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at  DateTime  @default(now()) @db.Timestamptz(6)
+  deleted_at  DateTime? @db.Timestamptz(6)
+  project_id  BigInt
+  employee_id BigInt
+  project     project   @relation(fields: [project_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  employee    employee  @relation(fields: [employee_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@unique([project_id, employee_id], name: "idx_project_employee_unique")
+  @@index([project_id], name: "idx_project_employee_project_id")
+  @@index([employee_id], name: "idx_project_employee_employee_id")
+}
+
+model task_employee {
+  id          BigInt    @id @default(autoincrement())
+  created_at  DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at  DateTime  @default(now()) @db.Timestamptz(6)
+  deleted_at  DateTime? @db.Timestamptz(6)
+  task_id     BigInt
+  employee_id BigInt
+  task        task      @relation(fields: [task_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  employee    employee  @relation(fields: [employee_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@unique([task_id, employee_id], name: "idx_task_employee_unique")
+  @@index([task_id], name: "idx_task_employee_task_id")
+  @@index([employee_id], name: "idx_task_employee_employee_id")
+}
+
+model team {
+  id              Int
+  uuid            String?      @default(uuid()) @db.Uuid
+  created_at      DateTime     @default(now()) @db.Timestamptz(6)
+  updated_at      DateTime?    @default(now()) @db.Timestamptz(6)
+  deleted_at      DateTime?    @db.Timestamptz(6)
+  name            String       @db.VarChar(255)
+  organization_id BigInt
+  organization    organization @relation(fields: [organization_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "teams_organization_id_fkey")
+  employees       employee[]
+
+  @@id([id, organization_id])
+}
+
+model session {
+  id          BigInt    @id @default(autoincrement())
+  start_at    DateTime  @default(now()) @db.Timestamptz(6)
+  end_at      DateTime? @db.Timestamptz(6)
+  task_id     BigInt
+  employee_id BigInt
+  task        task      @relation(fields: [task_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  employee    employee  @relation(fields: [employee_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  session_images session_image[]
+  @@unique([task_id, employee_id], name: "idx_session_unique")
+  @@index([task_id], name: "idx_session_task_id")
+  @@index([employee_id], name: "idx_session_employee_id")
+}
+
+model session_image {
+  id          BigInt    @id @default(autoincrement())
+  session_id  BigInt
+  image_url   String
+  created_at  DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at  DateTime  @default(now()) @db.Timestamptz(6)
+  deleted_at  DateTime? @db.Timestamptz(6)
+  session     session   @relation(fields: [session_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
