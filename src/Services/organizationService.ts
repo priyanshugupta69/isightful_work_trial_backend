@@ -119,4 +119,82 @@ export default class OrganizationService {
             throw new InternalError('Failed to get projects', error);
         }
     }
+    async getTeams(organization_id: number) {
+        try {
+            const teams = await this.prisma.team.findMany({
+                where: { organization_id },
+                select: {
+                    id: true,
+                    name: true,
+                    created_at: true,
+                    employees: {
+                        select: {
+                            id: true,
+                            first_name: true,
+                            last_name: true,
+                            email: true,
+                        }
+                    }
+                }
+            });
+            return teams;
+        } catch (error) {
+            throw new InternalError('Failed to get teams', error);
+        }
+    }
+        async getProjectsEmployees(project_id: number) {
+        try {
+            const projectEmployees = await this.prisma.project_employee.findMany({
+                where: { project_id, deleted_at: null },
+                select: {
+                    employee: {
+                        select: {
+                            id: true,
+                            first_name: true,
+                            last_name: true,
+                            email: true,
+                        }
+                    }
+                }
+            });
+            
+            // Extract just the employee objects from the result
+            const employees = projectEmployees.map(pe => pe.employee);
+            
+            return employees;
+        } catch (error) {
+            throw new InternalError('Failed to get projects employees', error);
+        }
+    }
+    async getProjectTasks(project_id: number) {
+        try {
+            const tasks = await this.prisma.task.findMany({
+                where: { project_id, deleted_at: null }
+            });
+            return tasks;
+        } catch (error) {
+            throw new InternalError('Failed to get project tasks', error);
+        }
+    }
+    async getTaskEmployees(task_id: number) {
+        try {
+            const taskEmployees = await this.prisma.task_employee.findMany({
+                where: { task_id, deleted_at: null },
+                select: {
+                    employee: {
+                        select: {
+                            id: true,
+                            first_name: true,
+                            last_name: true,
+                            email: true,
+                        }
+                    }
+                }
+            });
+            const employees = taskEmployees.map(te => te.employee);
+            return employees;
+        } catch (error) {
+            throw new InternalError('Failed to get task employees', error);
+        }
+    }
 }

@@ -68,5 +68,25 @@ router.get('/projects', asyncHandler(async (req: ProtectedRequest, res) => {
     const projects = await organizationService.getProjects(organization_id);
     return new SuccessResponse('Projects fetched successfully', projects).send(res);
 }));
+router.get('/teams', asyncHandler(async (req: ProtectedRequest, res) => {
+    const organization_id = req.user.id;
+    const teams = await organizationService.getTeams(organization_id);
+    return new SuccessResponse('Teams fetched successfully', teams).send(res);
+}));
+router.get('/projects-employees/:project_id', asyncHandler(async (req: ProtectedRequest, res) => {
+    const { project_id } = req.params;
+    const projects = await organizationService.getProjectsEmployees(Number(project_id));
+    return new SuccessResponse('Projects employees fetched successfully', projects).send(res);
+}));
+router.get('/projects/tasks/:project_id', asyncHandler(async (req: ProtectedRequest, res) => {
+    const { project_id } = req.params;
+    const tasks = await organizationService.getProjectTasks(Number(project_id));
+    return new SuccessResponse('Project tasks fetched successfully', tasks).send(res);
+}));
+router.get('/task-employees/:task_id', asyncHandler(async (req: ProtectedRequest, res) => {
+    const { task_id } = req.params;
+    const taskEmployees = await organizationService.getTaskEmployees(Number(task_id));
+    return new SuccessResponse('Task employees fetched successfully', taskEmployees).send(res);
+}));
 
 export default router;

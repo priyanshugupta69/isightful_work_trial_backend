@@ -43,9 +43,8 @@ export default class AuthService {
             const verificationToken = uuidv4();
             if(result && result.uuid) {
                 await redis.set(verificationToken, email, 'EX', 60 * 60 * 24 * 30);
-                const verificationLink = `${frontendUrl}/verify-email?token=${verificationToken}`;
-                const mailService = new ResendMailService();
-                await mailService.sendEmail(email, 'Welcome to Mercor', `<h1>You have successfully created an account on Mercor <br> Please verify your email</h1> <a href="${verificationLink}">Verify your email</a>`);
+                const verificationLink = `${frontendUrl}/verify-organization-email?token=${verificationToken}`;
+                await nodemailerMailService.sendEmail(email, 'Welcome to Mercor', `<h1>You have successfully created an account on Mercor <br> Please verify your email</h1> <a href="${verificationLink}">Verify your email</a>`);
             }
             else{
                 throw new InternalError('Failed to add organization');
@@ -55,6 +54,24 @@ export default class AuthService {
             console.log(error);
             throw new InternalError('Failed to signup');
         }
+    }
+    async resendEmail(email: string) {
+        try {
+            const organization = await this.prisma.organization.findUnique({
+                where: { email }
+            });
+            if (!organization) {
+                throw new BadRequestError('Organization not found');
+            }
+            const verificationToken = uuidv4();
+            await redis.set(verificationToken, email, 'EX', 60 * 60 * 24 * 30);
+            const verificationLink = `${frontendUrl}/verify-oraganization-email?token=${verificationToken}`;
+            await nodemailerMailService.sendEmail(email, 'Welcome to Mercor', `<h1>You have successfully created an account on Mercor <br> Please verify your email</h1> <a href="${verificationLink}">Verify your email</a>`);
+        } catch (error) {
+            console.log(error);
+            throw new InternalError('Failed to resend email');
+        }
+      
     }
     async verifyOrganizationEmail(token: string) {
         const email = await redis.get(token);

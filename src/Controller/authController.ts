@@ -14,6 +14,12 @@ router.post('/signup', asyncHandler(async (req, res) => {
     return new SuccessResponse('Organization created successfully', organization.name).send(res);
 }));
 
+router.post('/resend-verify-email', asyncHandler(async (req, res) => {
+    const { email } = req.body;
+    await authService.resendEmail(email);
+    return new SuccessResponse('Email sent successfully', { email }).send(res);
+}));
+
 router.post('/verify-organization-email', asyncHandler(async (req, res) => {
     const { token } = req.body;
     const { accessToken, refreshToken} = await authService.verifyOrganizationEmail(token);
