@@ -24,7 +24,7 @@ export default class EmployeeService {
                     verified: true
                 }
             });
-            await nodemailerMailService.sendEmail(email, 'Welcome to the team', `<h3>Fololow the link to verify and download the software</h3> <a href="${frontendUrl}/verify-email?token=${verificationToken}">Verify Email</a>`);
+            await nodemailerMailService.sendEmail(email, 'Welcome to the team', `<h3>Fololow the link to verify and download the software</h3> <a href="${frontendUrl}/verify-employee-email?token=${verificationToken}">Verify Email</a>`);
             await redis.hset(verificationToken, {email: email, organization_id: organization_id});
             await redis.expire(verificationToken, 60 * 60 * 24 * 30);
             return employee;
